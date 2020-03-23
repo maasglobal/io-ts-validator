@@ -21,23 +21,25 @@ export type Settings<E, O, SO, I, SI> = {
   readonly Promise: PromiseLibrary;
 };
 
-/* eslint-disable */
-
-export type Assert<A> = <I extends A>(i: I) => I
-
-export type DecodeSync<_E, I, A> = (i: I) => A;  // throws _E
-export type EncodeSync<_E, A, O> = (i: A) => O;  // throws _E
+export type DecodeSync<_E, I, A> = (i: I) => A; // throws _E
+export type EncodeSync<_E, A, O> = (i: A) => O; // throws _E
 
 export type DecodeAsync<E, I, A> = (i: I, cb: Callback<E, A>) => void;
 export type EncodeAsync<E, A, O> = (a: A, cb: Callback<E, O>) => void;
 
-export type DecodePromise<_E, I, A> = (i: I) => Promise<A>;  // rejects with E
-export type EncodePromise<_E, A, O> = (a: A) => Promise<O>;  // rejects with E
+export type DecodePromise<_E, I, A> = (i: I) => Promise<A>; // rejects with E
+export type EncodePromise<_E, A, O> = (a: A) => Promise<O>; // rejects with E
 
 export type DecodeEither<E, I, A> = (i: I) => Either<E, A>;
 export type EncodeEither<E, A, O> = (a: A) => Either<E, O>;
 
-interface Extension<E, A, SO, SI> {
+export type Check<A> = (u: unknown) => u is A;
+export type Assert<A> = <I extends A>(i: I) => I;
+
+export type _Validator<E, A, O, SO, I, SI> = {
+  readonly _codec: Codec<A, O, I>;
+  readonly _settings: Settings<E, O, SO, I, SI>;
+
   readonly decodeSync: DecodeSync<E, SI, A>;
   readonly encodeSync: EncodeSync<E, A, SO>;
   readonly decodeAsync: DecodeAsync<E, SI, A>;
@@ -46,37 +48,25 @@ interface Extension<E, A, SO, SI> {
   readonly encodePromise: EncodePromise<E, A, SO>;
   readonly decodeEither: DecodeEither<E, SI, A>;
   readonly encodeEither: EncodeEither<E, A, SO>;
+  readonly check: Check<A>;
   readonly assert: Assert<A>;
-}
+};
 
-export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements Codec<A, O, I>, Extension<E, A, SO, SI> {
+/* eslint-disable */
 
-  readonly _E!: E
-  readonly _A!: A
-  readonly _O!: O
-  readonly _SO!: SO
-  readonly _I!: I
-  readonly _SI!: SI
+export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Validator<E, A, O, SO, I, SI> {
 
-  readonly _settings: Settings<E, O, SO, I, SI>;
   readonly _codec: Codec<A, O, I>;
+  readonly _settings: Settings<E, O, SO, I, SI>;
 
   constructor(codec: Codec<A, O, I>, settings: Settings<E, O, SO, I, SI>) {
     this._codec = codec;
     this._settings = settings;
   }
-  readonly name = this._codec.name
-  readonly is = this._codec.is;
-  readonly validate = this._codec.validate;
-  readonly encode = this._codec.encode;
-  readonly pipe = this._codec.pipe;
-  readonly asEncoder = this._codec.asEncoder;
-  readonly asDecoder = this._codec.asDecoder;
-  readonly decode = this._codec.decode;
 
   encodeEither(a: A) {
     return pipe(
-      this.encode(a),
+      this._codec.encode(a),
       (o: O) => Either_.tryCatch(() => this._settings.parser.serialize(o), (): E => this._settings.mapError([]))
     );
   }
@@ -110,7 +100,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements Code
   decodeEither(si: SI) {
     return pipe(
       this._settings.parser.deserialize(si),
-      this.decode,
+      this._codec.decode,
       Either_.mapLeft(this._settings.mapError),
     );
   }
@@ -141,6 +131,11 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements Code
       ),
     );
   }
+
+  check(u: unknown): u is A {
+    return this._codec.is(u);
+  }
+
   assert<X extends A>(x: X) {
     return x;
   }
@@ -174,7 +169,7 @@ export type FromDefaults<E, O, SO, I, SI> = (s: Defaults<O, I>) => Settings<E, O
 
 export type CustomOrDefault<E, O, SO, I, SI> = Defaults<O, I> | Settings<E, O, SO, I, SI> 
 
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options: undefined): Validator<Array<string>, A, O, O, I, I>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>): Validator<Array<string>, A, O, O, I, I>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options: 'json'): Validator<Array<string>, A, O, string, I, string>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options: FromDefaults<E, O, SO, I, SI>): Validator<E, A, O, SO, I, SI>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options?: 'json'|FromDefaults<E, O, SO, I, SI>) {
