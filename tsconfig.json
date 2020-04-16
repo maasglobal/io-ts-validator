@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es5",
     "lib": ["esnext", "dom"],
+    "noErrorTruncation": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
