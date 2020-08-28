@@ -146,9 +146,13 @@ const _validator = <E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Setting
 
 const identity = <I>(i: I) => i; 
 
-export type Defaults<O, I> = Settings<Array<string>, O, O, I, I>
 
-export const defaults = <A, O, I>(codec: Codec<A, O, I>): Defaults<O, I> => ({
+export type Errors = Array<string>
+export type Jsontext = string
+
+export type Preset = 'raw'|'json'
+
+export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I> => ({
   Promise,
   mapError: PathReporter_.failure,
   parser: {
@@ -157,27 +161,28 @@ export const defaults = <A, O, I>(codec: Codec<A, O, I>): Defaults<O, I> => ({
   },
 })
 
-export const jsonDefaults = <A, O, I>(codec: Codec<A, O, I>) => ({
-  ...defaults(codec),
+export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsontext, I, Jsontext> => ({
+  ...raw(codec),
   parser: {
     serialize: (o: O): string => JSON.stringify(o),
     deserialize: (s: string): I => JSON.parse(s),
   }
 })
 
-export type FromDefaults<E, O, SO, I, SI> = (s: Defaults<O, I>) => Settings<E, O, SO, I, SI>;
-
-export type CustomOrDefault<E, O, SO, I, SI> = Defaults<O, I> | Settings<E, O, SO, I, SI> 
-
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>): Validator<Array<string>, A, O, O, I, I>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options: 'json'): Validator<Array<string>, A, O, string, I, string>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options: FromDefaults<E, O, SO, I, SI>): Validator<E, A, O, SO, I, SI>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options?: 'json'|FromDefaults<E, O, SO, I, SI>) {
-  if (typeof options === 'undefined') {
-    return _validator(codec, defaults(codec));
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>): Validator<Errors, A, O, O, I, I>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, preset: 'raw'): Validator<Errors, A, O, O, I, I>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, preset: 'json'): Validator<Errors, A, O, Jsontext, I, Jsontext>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, preset: 'raw', customize: (s: Settings<Errors, O, O, I, I>) => Settings<E, O, SO, I, SI>): Validator<E, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, preset: 'json', customize: (s: Settings<Errors, O, Jsontext, I, Jsontext>) => Settings<E, O, SO, I, SI>): Validator<E, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, preset?: Preset, customize?: (s: Settings<Errors, O, any, I, any>) => Settings<E, O, SO, I, SI>) {
+  if (customize) {
+    if (preset === 'json') {
+      return _validator(codec, customize(json(codec)));
+    }
+    return _validator(codec, customize(raw(codec)));
   }
-  if (options === 'json') {
-    return _validator(codec, jsonDefaults(codec));
+  if (preset === 'json') {
+    return _validator(codec, json(codec));
   }
-  return options(defaults(codec));
+  return _validator(codec, raw(codec));
 }
