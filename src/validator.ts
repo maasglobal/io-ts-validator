@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import * as PathReporter_ from 'io-ts/lib/PathReporter';
+import { Reader } from 'fp-ts/lib/Reader';
 import { Either } from 'fp-ts/lib/Either';
 import * as Either_ from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
@@ -140,15 +141,15 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     return x;
   }
 }
-const _validator = <E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Settings<E, O, SO, I, SI>): Validator<E, A, O, SO, I, SI> => {
-  return new Validator(codec, settings);
-}
 
 const identity = <I>(i: I) => i; 
 
-export type Defaults<O, I> = Settings<Array<string>, O, O, I, I>
+export type Errors = Array<string>
+export type Jsontext = string
 
-export const defaults = <A, O, I>(codec: Codec<A, O, I>): Defaults<O, I> => ({
+export type Preset = 'raw'|'json';
+
+export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I> => ({
   Promise,
   mapError: PathReporter_.failure,
   parser: {
@@ -157,27 +158,81 @@ export const defaults = <A, O, I>(codec: Codec<A, O, I>): Defaults<O, I> => ({
   },
 })
 
-export const jsonDefaults = <A, O, I>(codec: Codec<A, O, I>) => ({
-  ...defaults(codec),
+export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsontext, I, Jsontext> => ({
+  ...raw(codec),
   parser: {
     serialize: (o: O): string => JSON.stringify(o),
     deserialize: (s: string): I => JSON.parse(s),
   }
 })
 
-export type FromDefaults<E, O, SO, I, SI> = (s: Defaults<O, I>) => Settings<E, O, SO, I, SI>;
+type Presets<O, I> = {
+  raw: Settings<Errors, O, O, I, I>
+  json: Settings<Errors, O, Jsontext, I, Jsontext>
+}
 
-export type CustomOrDefault<E, O, SO, I, SI> = Defaults<O, I> | Settings<E, O, SO, I, SI> 
+const presets = <A, O, I>(codec: Codec<A, O, I>): Presets<O, I> => ({
+  raw: raw(codec),
+  json: json(codec),
+})
 
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>): Validator<Array<string>, A, O, O, I, I>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options: 'json'): Validator<Array<string>, A, O, string, I, string>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options: FromDefaults<E, O, SO, I, SI>): Validator<E, A, O, SO, I, SI>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, options?: 'json'|FromDefaults<E, O, SO, I, SI>) {
-  if (typeof options === 'undefined') {
-    return _validator(codec, defaults(codec));
+
+type Select<O,I,P extends Preset> = Presets<O,I>[P]
+
+const select = <A, O, I, P extends Preset>(p: P): Reader<Codec<A, O, I>, Select<O, I, P>> => (codec) => presets(codec)[p]
+
+type Customizer<E,O,SO,I,SI> = (p: Presets<O, I>) => Settings<E, O, SO, I, SI>
+
+
+
+function fromSettings<E, A, O, SO, I, SI>(settings: Settings<E,O,SO,I,SI>): Reader<Codec<A, O, I>, Validator<E, A, O, SO, I, SI>> {
+  return (codec: Codec<A, O, I>) => new Validator(codec, settings);
+}
+function fromCustomizer<E, A, O, SO, I, SI>(customizer: Customizer<E,O,SO,I,SI>): Reader<Codec<A, O, I>, Validator<E, A, O, SO, I, SI>> {
+  return (codec: Codec<A, O, I>) => pipe(
+    codec,
+    fromSettings(customizer(presets(codec)))
+  );
+}
+function fromPresetRaw<A, O, I>(_preset: 'raw'): Reader<Codec<A, O, I>, Validator<Errors, A, O, O, I, I>> {
+  return (codec: Codec<A, O, I>) => pipe(
+    codec,
+    fromSettings(select<A, O, I, 'raw'>('raw')(codec)),
+  );
+}
+function fromPresetJson<A, O, I>(_preset: 'json'): Reader<Codec<A, O, I>, Validator<Errors, A, O, Jsontext, I, Jsontext>> {
+  return (codec: Codec<A, O, I>) => pipe(
+    codec,
+    fromSettings(select<A, O, I, 'json'>('json')(codec)),
+  );
+}
+
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>): Validator<Errors, A, O, O, I, I>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'raw'): Validator<Errors, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'json'): Validator<Errors, A, O, Jsontext, I, Jsontext>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Settings<E,O,SO,I,SI>): Validator<E, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Customizer<E,O,SO,I,SI>): Validator<E, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings?: Preset|Settings<E,O,SO,I,SI>|Customizer<E,O,SO,I,SI>) {
+  if (typeof settings === 'object') {
+    return pipe(
+      codec,
+      fromSettings(settings)
+    )
   }
-  if (options === 'json') {
-    return _validator(codec, jsonDefaults(codec));
+  if (typeof settings === 'function') {
+    return pipe(
+      codec,
+      fromCustomizer(settings)
+    );
   }
-  return options(defaults(codec));
+  if (settings === 'json') {
+     return pipe(
+       codec,
+       fromPresetJson('json')
+     );
+  }
+  return pipe(
+    codec,
+    fromPresetRaw('raw'),
+  );
 }
