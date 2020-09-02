@@ -147,7 +147,7 @@ const identity = <I>(i: I) => i;
 export type Errors = Array<string>
 export type Jsontext = string
 
-export type Preset = 'raw'|'json';
+export type Preset = 'raw'|'json'|'strict';
 
 export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I> => ({
   Promise,
@@ -166,14 +166,24 @@ export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsonte
   }
 })
 
+export const strict = <A, O, I>(codec: Codec<A, O, I>) => ({
+  ...raw(codec),
+  parser: {
+    serialize: (o: O): O => o,
+    deserialize: (i: O): O => i,
+  }
+})
+
 type Presets<O, I> = {
   raw: Settings<Errors, O, O, I, I>
   json: Settings<Errors, O, Jsontext, I, Jsontext>
+  strict: Settings<Errors, O, O, O, O>
 }
 
-const presets = <A, O, I>(codec: Codec<A, O, I>): Presets<O, I> => ({
+const presets = <A, O, I, SO>(codec: Codec<A, O, I>): Presets<O, I> => ({
   raw: raw(codec),
   json: json(codec),
+  strict: strict(codec),
 })
 
 
@@ -182,7 +192,6 @@ type Select<O,I,P extends Preset> = Presets<O,I>[P]
 const select = <A, O, I, P extends Preset>(p: P): Reader<Codec<A, O, I>, Select<O, I, P>> => (codec) => presets(codec)[p]
 
 type Customizer<E,O,SO,I,SI> = (p: Presets<O, I>) => Settings<E, O, SO, I, SI>
-
 
 
 function fromSettings<E, A, O, SO, I, SI>(settings: Settings<E,O,SO,I,SI>): Reader<Codec<A, O, I>, Validator<E, A, O, SO, I, SI>> {
@@ -210,6 +219,7 @@ function fromPresetJson<A, O, I>(_preset: 'json'): Reader<Codec<A, O, I>, Valida
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>): Validator<Errors, A, O, O, I, I>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'raw'): Validator<Errors, A, O, SO, I, SI>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'json'): Validator<Errors, A, O, Jsontext, I, Jsontext>;
+export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'strict'): Validator<Errors, A, O, O, O, O>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Settings<E,O,SO,I,SI>): Validator<E, A, O, SO, I, SI>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Customizer<E,O,SO,I,SI>): Validator<E, A, O, SO, I, SI>;
 export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings?: Preset|Settings<E,O,SO,I,SI>|Customizer<E,O,SO,I,SI>) {

@@ -21,6 +21,15 @@ describe('io-ts-validator', () => {
     expect(validator(t.array(t.number), 'json').decodeSync(valid)).toEqual(expected);
     expect(() => validator(t.array(t.number), 'json').decodeSync(broken)).toThrowError();
   });
+  it('should provide strict preset with static input validation', () => {
+    const valid = 123;
+    const broken = 0.123;
+    const error = '123';
+    expect(validator(t.Int, 'strict').decodeSync(valid)).toEqual(valid);
+    expect(() => validator(t.Int, 'strict').decodeSync(broken)).toThrowError();
+    // @ts-expect-error not a number
+    expect(() => validator(t.Int, 'strict').decodeSync(error)).toThrowError();
+  });
   it('should let user define custom settings', () => {
     const valid = 123;
     const broken = 0.123;
