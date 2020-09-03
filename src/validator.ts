@@ -159,19 +159,21 @@ export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I
 })
 
 export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsontext, I, Jsontext> => ({
-  ...raw(codec),
+  Promise,
+  mapError: PathReporter_.failure,
   parser: {
     serialize: (o: O): string => JSON.stringify(o),
     deserialize: (s: string): I => JSON.parse(s),
   }
 })
 
-export const strict = <A, O, I>(codec: Codec<A, O, I>) => ({
-  ...raw(codec),
+export const strict= <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, O, O> => ({
+  Promise,
+  mapError: PathReporter_.failure,
   parser: {
-    serialize: (o: O): O => o,
-    deserialize: (i: O): O => i,
-  }
+    serialize: identity,
+    deserialize: identity,
+  },
 })
 
 type Presets<O, I> = {
