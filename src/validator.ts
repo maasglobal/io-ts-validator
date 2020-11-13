@@ -65,13 +65,13 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     this._settings = settings;
   }
 
-  encodeEither(a: A) {
+  encodeEither = (a: A) => {
     return pipe(
       this._codec.encode(a),
       (o: O) => Either_.tryCatch(() => this._settings.parser.serialize(o), (): E => this._settings.mapError([]))
     );
   }
-  encodeSync(a: A) {
+  encodeSync = (a: A) => {
     return pipe(
       this.encodeEither(a),
       Either_.fold(
@@ -80,7 +80,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
       ),
     );
   }
-  encodeAsync(a: A, cb: Callback<E, SO>) {
+  encodeAsync = (a: A, cb: Callback<E, SO>) => {
     return pipe(
       this.encodeEither(a),
       Either_.fold(
@@ -89,7 +89,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
       ),
     );
   }
-  encodePromise(a: A) {
+  encodePromise = (a: A) => {
     return pipe(
       this.encodeEither(a),
       Either_.fold(
@@ -98,14 +98,14 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
       ),
     );
   }
-  decodeEither(si: SI) {
+  decodeEither = (si: SI) => {
     return pipe(
       this._settings.parser.deserialize(si),
       this._codec.decode,
       Either_.mapLeft(this._settings.mapError),
     );
   }
-  decodeSync(si: SI) {
+  decodeSync = (si: SI) => {
     return pipe(
       this.decodeEither(si),
       Either_.fold(
@@ -114,7 +114,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
       ),
     );
   }
-  decodeAsync(si: SI, cb: Callback<E, A>) {
+  decodeAsync = (si: SI, cb: Callback<E, A>) => {
     return pipe(
       this.decodeEither(si),
       Either_.fold(
@@ -123,7 +123,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
       ),
     );
   }
-  decodePromise(si: SI) {
+  decodePromise = (si: SI) => {
     return pipe(
       this.decodeEither(si),
       Either_.fold(
@@ -133,7 +133,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     );
   }
 
-  check(u: unknown): u is A {
+  check = (u: unknown): u is A  => {
     return this._codec.is(u);
   }
 
