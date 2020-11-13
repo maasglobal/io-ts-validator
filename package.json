@@ -1,6 +1,6 @@
 {
   "name": "io-ts-validator",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "main": "lib/validator.js",
   "files": [
@@ -14,7 +14,8 @@
     "eslint": "eslint --max-warnings=0 '**/*.{ts,js,json}'",
     "lint": "yarn eslint",
     "ci": "yarn lint && yarn typecheck && yarn test && yarn build",
-    "deploy-npm": "yarn ci && yarn publish"
+    "deploy-npm": "yarn ci && yarn publish",
+    "deploy-alpha": "yarn ci && yarn publish --tag alpha"
   },
   "peerDependencies": {
     "fp-ts": "^2.0.0",
