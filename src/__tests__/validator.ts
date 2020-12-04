@@ -1,4 +1,5 @@
 import * as t from 'io-ts';
+
 import { validator } from '../validator';
 
 describe('io-ts-validator', () => {
