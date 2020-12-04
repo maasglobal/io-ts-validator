@@ -1,9 +1,9 @@
-import * as t from 'io-ts';
-import * as PathReporter_ from 'io-ts/lib/PathReporter';
-import { Reader } from 'fp-ts/lib/Reader';
 import { Either } from 'fp-ts/lib/Either';
 import * as Either_ from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
+import { Reader } from 'fp-ts/lib/Reader';
+import * as t from 'io-ts';
+import * as PathReporter_ from 'io-ts/lib/PathReporter';
 
 export type Callback<E, D> = (...x: [E] | [null, D]) => void;
 export type PromiseLibrary = typeof Promise;
