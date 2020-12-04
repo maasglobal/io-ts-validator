@@ -162,7 +162,12 @@ export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsonte
   Promise,
   mapError: PathReporter_.failure,
   parser: {
-    serialize: (o: O): string => JSON.stringify(o),
+    serialize: (o: O): string => {
+      const candidate = JSON.stringify(o);
+      // parse to make sure candidate is welformed
+      JSON.parse(candidate);
+      return candidate;
+    },
     deserialize: (s: string): I => JSON.parse(s),
   }
 })

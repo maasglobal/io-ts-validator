@@ -81,4 +81,9 @@ describe('io-ts-validator', () => {
       })).decodeSync(broken),
     ).toThrowError();
   });
+  it('should fail when encoder and serialiser are incompatible', () => {
+    const valid = undefined;
+    expect(validator(t.undefined, 'strict').encodeSync(valid)).toEqual(valid);
+    expect(() => validator(t.undefined, 'json').encodeSync(valid)).toThrowError();
+  });
 });
