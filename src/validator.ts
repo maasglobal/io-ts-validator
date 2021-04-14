@@ -1,6 +1,8 @@
+import { Json } from 'fp-ts/lib/Json';
+import * as Json_ from 'fp-ts/lib/Json';
 import { Either } from 'fp-ts/lib/Either';
 import * as Either_ from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import { pipe } from 'fp-ts/lib/function';
 import { Reader } from 'fp-ts/lib/Reader';
 import * as t from 'io-ts';
 import * as PathReporter_ from 'io-ts/lib/PathReporter';
@@ -162,13 +164,20 @@ export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsonte
   Promise,
   mapError: PathReporter_.failure,
   parser: {
-    serialize: (o: O): string => {
-      const candidate = JSON.stringify(o);
-      // parse to make sure candidate is welformed
-      JSON.parse(candidate);
-      return candidate;
-    },
-    deserialize: (s: string): I => JSON.parse(s),
+    serialize: (o: O): Jsontext => pipe(
+      Json_.stringify(o, () => new Error('Failed to stringify as JSON')),
+      Either_.fold(
+        (error): Jsontext => { throw error },
+        (so: string): Jsontext => so,
+      ),
+    ),
+    deserialize: (si: Jsontext): I => pipe(
+      Json_.parse(si, () => new Error('Failed to parse as JSON')),
+      Either_.fold(
+        (error): I => { throw error },
+        (i: Json): I => i as unknown as I,
+      ),
+    ),
   }
 })
 
