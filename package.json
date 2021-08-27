@@ -18,8 +18,8 @@
     "deploy-alpha": "yarn ci && yarn publish --tag alpha"
   },
   "peerDependencies": {
-    "fp-ts": "^2.10.0",
-    "io-ts": "^2.2.13"
+    "fp-ts": "^2.11.1",
+    "io-ts": "^2.2.16"
   },
   "devDependencies": {
     "@types/jest": "^24.0.12",
@@ -35,8 +35,8 @@
     "eslint-plugin-json": "^2.1.0",
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-simple-import-sort": "^5.0.3",
-    "fp-ts": "^2.10.0",
-    "io-ts": "^2.2.13",
+    "fp-ts": "^2.11.1",
+    "io-ts": "^2.2.16",
     "jest": "^26.5.2",
     "monocle-ts": "^2.0.0",
     "prettier": "^2.1.2",
