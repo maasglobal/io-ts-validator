@@ -2,24 +2,26 @@
   "name": "io-ts-validator",
   "version": "0.0.6",
   "description": "",
+  "license": "MIT",
+  "keywords": [
+    "io-ts",
+    "typescript"
+  ],
+  "bugs": {
+    "url": "https://github.com/maasglobal/io-ts-validator/issues"
+  },
+  "homepage": "https://github.com/maasglobal/io-ts-validator/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maasglobal/io-ts-validator.git"
+  },
   "main": "lib/validator.js",
   "files": [
     "lib/**/*"
   ],
-  "scripts": {
-    "test": "jest --no-cache",
-    "clean": "rm -rf lib",
-    "typecheck": "tsc -p src/tsconfig.json",
-    "build": "yarn clean && tsc",
-    "eslint": "eslint --max-warnings=0 '**/*.{ts,js,json}'",
-    "lint": "yarn eslint",
-    "ci": "yarn lint && yarn typecheck && yarn test && yarn build",
-    "deploy-npm": "yarn ci && yarn publish",
-    "deploy-alpha": "yarn ci && yarn publish --tag alpha"
-  },
   "peerDependencies": {
-    "fp-ts": "^2.10.0",
-    "io-ts": "^2.2.13"
+    "fp-ts": "^2.11.1",
+    "io-ts": "^2.2.16"
   },
   "devDependencies": {
     "@types/jest": "^24.0.12",
@@ -35,25 +37,24 @@
     "eslint-plugin-json": "^2.1.0",
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-simple-import-sort": "^5.0.3",
-    "fp-ts": "^2.10.0",
-    "io-ts": "^2.2.13",
+    "fp-ts": "^2.11.1",
+    "io-ts": "^2.2.16",
     "jest": "^26.5.2",
     "monocle-ts": "^2.0.0",
     "prettier": "^2.1.2",
     "ts-jest": "^26.4.1",
-    "typescript": "^4.2.4"
+    "typescript": "^4.4.2"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/maasglobal/io-ts-validator.git"
-  },
-  "keywords": [
-    "io-ts",
-    "typescript"
-  ],
-  "bugs": {
-    "url": "https://github.com/maasglobal/io-ts-validator/issues"
-  },
-  "homepage": "https://github.com/maasglobal/io-ts-validator/",
-  "license": "MIT"
+  "scripts": {
+    "test": "jest --no-cache",
+    "clean": "rm -rf lib",
+    "typecheck": "tsc -p src/tsconfig.json",
+    "build": "yarn clean && tsc",
+    "eslint": "eslint --max-warnings=0 '**/*.{ts,js,json}'",
+    "prettify": "yarn eslint --fix || true",
+    "lint": "yarn eslint",
+    "ci": "yarn lint && yarn typecheck && yarn test && yarn build",
+    "deploy-npm": "yarn ci && yarn publish",
+    "deploy-alpha": "yarn ci && yarn publish --tag alpha"
+  }
 }
