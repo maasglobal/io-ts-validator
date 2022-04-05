@@ -7,6 +7,13 @@ import { Reader } from 'fp-ts/lib/Reader';
 import * as t from 'io-ts';
 import * as PathReporter_ from 'io-ts/lib/PathReporter';
 
+import {
+  ValidatorErrorArray as Errors,
+  validatorErrorArray as errorArray,
+} from './errors';
+
+export * from './errors';
+
 export type Callback<E, D> = (...x: [E] | [null, D]) => void;
 export type PromiseLibrary = typeof Promise;
 
@@ -77,7 +84,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     return pipe(
       this.encodeEither(a),
       Either_.fold(
-        (err) => { throw new Error(String(err)) },
+        (e) => { throw e },
         (a) => a,
       ),
     );
@@ -86,7 +93,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     return pipe(
       this.encodeEither(a),
       Either_.fold(
-        (err) => cb(err),
+        (e) => cb(e),
         (a) => cb(null, a),
       ),
     );
@@ -95,7 +102,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     return pipe(
       this.encodeEither(a),
       Either_.fold(
-        (err) => this._settings.Promise.reject(new Error(String(err))),
+        (e) => this._settings.Promise.reject(e),
         (a) =>  this._settings.Promise.resolve(a),
       ),
     );
@@ -111,7 +118,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     return pipe(
       this.decodeEither(si),
       Either_.fold(
-        (err) => { throw new Error(String(err)) },
+        (e) => { throw e },
         (a) => a,
       ),
     );
@@ -120,7 +127,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     return pipe(
       this.decodeEither(si),
       Either_.fold(
-        (err) => cb(err),
+        (e) => cb(e),
         (a) => cb(null, a),
       ),
     );
@@ -129,7 +136,7 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
     return pipe(
       this.decodeEither(si),
       Either_.fold(
-        (err) => this._settings.Promise.reject(new Error(String(err))),
+        (e) => this._settings.Promise.reject(e),
         (a) =>  this._settings.Promise.resolve(a),
       ),
     );
@@ -146,14 +153,13 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
 
 const identity = <I>(i: I) => i; 
 
-export type Errors = Array<string>
 export type Jsontext = string
 
 export type Preset = 'raw'|'json'|'strict';
 
 export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I> => ({
   Promise,
-  mapError: PathReporter_.failure,
+  mapError: (te) => errorArray(PathReporter_.failure(te)),
   parser: {
     serialize: identity,
     deserialize: identity,
@@ -162,7 +168,7 @@ export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I
 
 export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsontext, I, Jsontext> => ({
   Promise,
-  mapError: PathReporter_.failure,
+  mapError: (te) => errorArray(PathReporter_.failure(te)),
   parser: {
     serialize: (o: O): Jsontext => pipe(
       Json_.stringify(o),
@@ -181,9 +187,9 @@ export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsonte
   }
 })
 
-export const strict= <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, O, O> => ({
+export const strict = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, O, O> => ({
   Promise,
-  mapError: PathReporter_.failure,
+  mapError: (te) => errorArray(PathReporter_.failure(te)),
   parser: {
     serialize: identity,
     deserialize: identity,
