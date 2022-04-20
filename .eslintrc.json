@@ -1,6 +1,6 @@
 {
   "extends": [
-    "eslint-config-maasglobal-ts"
+    "eslint-config-maasglobal-ts/strict"
   ],
   "overrides": [
     {
@@ -8,8 +8,6 @@
       "rules": {
         "@typescript-eslint/consistent-type-definitions": 0,
         "fp/no-throw": 0,
-        "import/order": 0,
-        "prettier/prettier": 0,
         "simple-import-sort/sort": 0
       }
     }
