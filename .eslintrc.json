@@ -1,15 +1,11 @@
 {
-  "extends": [
-    "eslint-config-maasglobal-ts"
-  ],
+  "extends": ["eslint-config-maasglobal-ts/strict"],
   "overrides": [
     {
       "files": ["src/readme.ts"],
       "rules": {
         "@typescript-eslint/consistent-type-definitions": 0,
         "fp/no-throw": 0,
-        "import/order": 0,
-        "prettier/prettier": 0,
         "simple-import-sort/sort": 0
       }
     }

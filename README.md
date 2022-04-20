@@ -18,22 +18,21 @@ import * as t from 'io-ts';
 const Person = t.type({
   name: t.string,
   age: t.number,
-})
-type Person = t.TypeOf<typeof Person>
+});
+type Person = t.TypeOf<typeof Person>;
 
 const joe: Person = {
   name: 'Joe',
   age: 45,
-}
+};
 ```
 
 ## Input Decoding
 
 Sooner or later we will run into a situation where we encounter a person with an unknown type.
 Perhaps we received that person over the network or read the information from a loosely typed database.
-The io-ts-validator package provides several variants of the decode method. *The decoding process
-itself is always synchronous regardless of which decode method is used.*
-
+The io-ts-validator package provides several variants of the decode method. _The decoding process
+itself is always synchronous regardless of which decode method is used._
 
 Below we simulate this by turning Joe into a person candidate with unknown type.
 We two procedures `logPerson` and `logErrors` that expect typed inputs.
@@ -43,23 +42,23 @@ We can then use the various decode methods from the validator to turn the candid
 import { validator, ValidatorErrorArray } from 'io-ts-validator';
 
 function logErrors(errors: ValidatorErrorArray): void {
-  console.error(errors)
+  console.error(errors);
 }
 
 function logPerson(person: Person): void {
-  console.log(person)
+  console.log(person);
 }
 
 // this works
-logPerson(joe)
+logPerson(joe);
 
 const mary: unknown = {
   name: 'Mary',
   age: 13,
-}
+};
 
 // @ts-expect-error candidate might not be a Person
-logPerson(mary)
+logPerson(mary);
 ```
 
 ### decodeSync
@@ -71,17 +70,15 @@ indistinguishable of unexpected errors.
 
 ```typescript
 function decodeSyncExample(candidate: unknown): void {
-
   try {
     const person: Person = validator(Person).decodeSync(candidate);
-    logPerson(person)
-  } catch(error) {
+    logPerson(person);
+  } catch (error) {
     if (error instanceof ValidatorErrorArray) {
-      logErrors(error)
+      logErrors(error);
     }
-    throw error;  // unrelated error
+    throw error; // unrelated error
   }
-
 }
 ```
 
@@ -93,17 +90,15 @@ makes heavy use of promise based error handling.
 
 ```typescript
 async function decodePromiseExample(candidate: unknown): Promise<void> {
-
   try {
     const person: Person = await validator(Person).decodePromise(candidate);
-    logPerson(person)
-  } catch(error) {
+    logPerson(person);
+  } catch (error) {
     if (error instanceof ValidatorErrorArray) {
-      logErrors(error)
+      logErrors(error);
     }
-    throw error;  // unrelated error
+    throw error; // unrelated error
   }
-
 }
 ```
 
@@ -115,15 +110,13 @@ guarantee the type of the returned error.
 
 ```typescript
 function decodeEitherExample(candidate: unknown): void {
-
   const result = validator(Person).decodeEither(candidate);
 
   if (result._tag === 'Left') {
-    logErrors(result.left)
+    logErrors(result.left);
   } else {
-    logPerson(result.right)
+    logPerson(result.right);
   }
-
 }
 ```
 
@@ -131,11 +124,10 @@ The return value is compatible with generic utilities from the fp-ts
 [Either](https://gcanti.github.io/fp-ts/modules/Either.ts.html) module.
 
 ```typescript
-import { pipe } from 'fp-ts/function'
-import { fold } from 'fp-ts/Either'
+import { pipe } from 'fp-ts/function';
+import { fold } from 'fp-ts/Either';
 
-function decodeEitherToolingExample(candidate: unknown): number|null {
-
+function decodeEitherToolingExample(candidate: unknown): number | null {
   return pipe(
     validator(Person).decodeEither(candidate),
     fold(
@@ -143,30 +135,22 @@ function decodeEitherToolingExample(candidate: unknown): number|null {
       ({ age }) => age,
     ),
   );
-
 }
 ```
 
-
 ### decodeAsync
 
-The `decodeAsync` method lets the user define a [NodeJS style](
-https://nodejs.org/en/knowledge/errors/what-are-the-error-conventions/
-) asynchronous callback for dealing with the result.
+The `decodeAsync` method lets the user define a [NodeJS style](https://nodejs.org/en/knowledge/errors/what-are-the-error-conventions/) asynchronous callback for dealing with the result.
 
 ```typescript
 function decodeAsyncExample(candidate: unknown): void {
-
   validator(Person).decodeAsync(candidate, (errors, person?) => {
-
     if (errors) {
-      logErrors(errors)
+      logErrors(errors);
     } else {
-      logPerson(person)
+      logPerson(person);
     }
-
   });
-
 }
 ```
 
@@ -195,7 +179,7 @@ const wireJoe = validator(Person, 'json').encodeSync(joe);
 const ramJoe = validator(Person, 'json').decodeSync(wireJoe);
 ```
 
-##  Runtime Validation
+## Runtime Validation
 
 TypeScript static type system has some limitations which makes
 it difficult to validate specific properties of strings and
@@ -204,23 +188,22 @@ Brands are inspection stamps that can be used by the validator to indicate that 
 item has passed validation. In the example below we define a codec that change
 the age of the person and brands them as adults if they pass validation.
 
-
 ```typescript
 interface AdultBrand {
-  readonly Adult: unique symbol
+  readonly Adult: unique symbol;
 }
 const Adult = t.brand(
   Person,
   (p: Person): p is t.Branded<Person, AdultBrand> => p.age >= 18,
   'Adult',
 );
-type Adult = t.TypeOf<typeof Adult>
+type Adult = t.TypeOf<typeof Adult>;
 
 // @ts-expect-error bob *might* not yet be 18
 const possiblyInvalid: Adult = {
   name: 'Bob',
   age: 22,
-}
+};
 
 // this is ok
 const knownToBeValid: Adult = validator(Adult).decodeSync({
