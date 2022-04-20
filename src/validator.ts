@@ -64,8 +64,9 @@ export type _Validator<E, A, O, SO, I, SI> = {
 
 /* eslint-disable */
 
-export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Validator<E, A, O, SO, I, SI> {
-
+export class Validator<E, A, O = A, SO = O, I = unknown, SI = I>
+  implements _Validator<E, A, O, SO, I, SI>
+{
   readonly _codec: Codec<A, O, I>;
   readonly _settings: Settings<E, O, SO, I, SI>;
 
@@ -75,20 +76,24 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
   }
 
   encodeEither = (a: A) => {
-    return pipe(
-      this._codec.encode(a),
-      (o: O) => Either_.tryCatch(() => this._settings.parser.serialize(o), (): E => this._settings.mapError([]))
+    return pipe(this._codec.encode(a), (o: O) =>
+      Either_.tryCatch(
+        () => this._settings.parser.serialize(o),
+        (): E => this._settings.mapError([]),
+      ),
     );
-  }
+  };
   encodeSync = (a: A) => {
     return pipe(
       this.encodeEither(a),
       Either_.fold(
-        (e) => { throw e },
+        (e) => {
+          throw e;
+        },
         (a) => a,
       ),
     );
-  }
+  };
   encodeAsync = (a: A, cb: Callback<E, SO>) => {
     return pipe(
       this.encodeEither(a),
@@ -97,32 +102,34 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
         (a) => cb(null, a),
       ),
     );
-  }
+  };
   encodePromise = (a: A) => {
     return pipe(
       this.encodeEither(a),
       Either_.fold(
         (e) => this._settings.Promise.reject(e),
-        (a) =>  this._settings.Promise.resolve(a),
+        (a) => this._settings.Promise.resolve(a),
       ),
     );
-  }
+  };
   decodeEither = (si: SI) => {
     return pipe(
       this._settings.parser.deserialize(si),
       this._codec.decode,
       Either_.mapLeft(this._settings.mapError),
     );
-  }
+  };
   decodeSync = (si: SI) => {
     return pipe(
       this.decodeEither(si),
       Either_.fold(
-        (e) => { throw e },
+        (e) => {
+          throw e;
+        },
         (a) => a,
       ),
     );
-  }
+  };
   decodeAsync = (si: SI, cb: Callback<E, A>) => {
     return pipe(
       this.decodeEither(si),
@@ -131,31 +138,31 @@ export class Validator<E, A, O = A, SO = O, I = unknown, SI = I> implements _Val
         (a) => cb(null, a),
       ),
     );
-  }
+  };
   decodePromise = (si: SI) => {
     return pipe(
       this.decodeEither(si),
       Either_.fold(
         (e) => this._settings.Promise.reject(e),
-        (a) =>  this._settings.Promise.resolve(a),
+        (a) => this._settings.Promise.resolve(a),
       ),
     );
-  }
+  };
 
-  check = (u: unknown): u is A  => {
+  check = (u: unknown): u is A => {
     return this._codec.is(u);
-  }
+  };
 
   assert<X extends A>(x: X) {
     return x;
   }
 }
 
-const identity = <I>(i: I) => i; 
+const identity = <I>(i: I) => i;
 
-export type Jsontext = string
+export type Jsontext = string;
 
-export type Preset = 'raw'|'json'|'strict';
+export type Preset = 'raw' | 'json' | 'strict';
 
 export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I> => ({
   Promise,
@@ -164,28 +171,36 @@ export const raw = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, I, I
     serialize: identity,
     deserialize: identity,
   },
-})
+});
 
-export const json = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, Jsontext, I, Jsontext> => ({
+export const json = <A, O, I>(
+  codec: Codec<A, O, I>,
+): Settings<Errors, O, Jsontext, I, Jsontext> => ({
   Promise,
   mapError: (te) => errorArray(PathReporter_.failure(te)),
   parser: {
-    serialize: (o: O): Jsontext => pipe(
-      Json_.stringify(o),
-      Either_.fold(
-        (error): Jsontext => { throw new Error('Failed to stringify as JSON') },
-        (so: string): Jsontext => so,
+    serialize: (o: O): Jsontext =>
+      pipe(
+        Json_.stringify(o),
+        Either_.fold(
+          (error): Jsontext => {
+            throw new Error('Failed to stringify as JSON');
+          },
+          (so: string): Jsontext => so,
+        ),
       ),
-    ),
-    deserialize: (si: Jsontext): I => pipe(
-      Json_.parse(si),
-      Either_.fold(
-        (error): I => { throw new Error('Failed to parse as JSON') },
-        (i: Json): I => i as unknown as I,
+    deserialize: (si: Jsontext): I =>
+      pipe(
+        Json_.parse(si),
+        Either_.fold(
+          (error): I => {
+            throw new Error('Failed to parse as JSON');
+          },
+          (i: Json): I => i as unknown as I,
+        ),
       ),
-    ),
-  }
-})
+  },
+});
 
 export const strict = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, O, O> => ({
   Promise,
@@ -194,77 +209,87 @@ export const strict = <A, O, I>(codec: Codec<A, O, I>): Settings<Errors, O, O, O
     serialize: identity,
     deserialize: identity,
   },
-})
+});
 
 type Presets<O, I> = {
-  raw: Settings<Errors, O, O, I, I>
-  json: Settings<Errors, O, Jsontext, I, Jsontext>
-  strict: Settings<Errors, O, O, O, O>
-}
+  raw: Settings<Errors, O, O, I, I>;
+  json: Settings<Errors, O, Jsontext, I, Jsontext>;
+  strict: Settings<Errors, O, O, O, O>;
+};
 
 const presets = <A, O, I, SO>(codec: Codec<A, O, I>): Presets<O, I> => ({
   raw: raw(codec),
   json: json(codec),
   strict: strict(codec),
-})
+});
 
+type Select<O, I, P extends Preset> = Presets<O, I>[P];
 
-type Select<O,I,P extends Preset> = Presets<O,I>[P]
+const select =
+  <A, O, I, P extends Preset>(p: P): Reader<Codec<A, O, I>, Select<O, I, P>> =>
+  (codec) =>
+    presets(codec)[p];
 
-const select = <A, O, I, P extends Preset>(p: P): Reader<Codec<A, O, I>, Select<O, I, P>> => (codec) => presets(codec)[p]
+type Customizer<E, O, SO, I, SI> = (p: Presets<O, I>) => Settings<E, O, SO, I, SI>;
 
-type Customizer<E,O,SO,I,SI> = (p: Presets<O, I>) => Settings<E, O, SO, I, SI>
-
-
-function fromSettings<E, A, O, SO, I, SI>(settings: Settings<E,O,SO,I,SI>): Reader<Codec<A, O, I>, Validator<E, A, O, SO, I, SI>> {
+function fromSettings<E, A, O, SO, I, SI>(
+  settings: Settings<E, O, SO, I, SI>,
+): Reader<Codec<A, O, I>, Validator<E, A, O, SO, I, SI>> {
   return (codec: Codec<A, O, I>) => new Validator(codec, settings);
 }
-function fromCustomizer<E, A, O, SO, I, SI>(customizer: Customizer<E,O,SO,I,SI>): Reader<Codec<A, O, I>, Validator<E, A, O, SO, I, SI>> {
-  return (codec: Codec<A, O, I>) => pipe(
-    codec,
-    fromSettings(customizer(presets(codec)))
-  );
+function fromCustomizer<E, A, O, SO, I, SI>(
+  customizer: Customizer<E, O, SO, I, SI>,
+): Reader<Codec<A, O, I>, Validator<E, A, O, SO, I, SI>> {
+  return (codec: Codec<A, O, I>) => pipe(codec, fromSettings(customizer(presets(codec))));
 }
-function fromPresetRaw<A, O, I>(_preset: 'raw'): Reader<Codec<A, O, I>, Validator<Errors, A, O, O, I, I>> {
-  return (codec: Codec<A, O, I>) => pipe(
-    codec,
-    fromSettings(select<A, O, I, 'raw'>('raw')(codec)),
-  );
+function fromPresetRaw<A, O, I>(
+  _preset: 'raw',
+): Reader<Codec<A, O, I>, Validator<Errors, A, O, O, I, I>> {
+  return (codec: Codec<A, O, I>) =>
+    pipe(codec, fromSettings(select<A, O, I, 'raw'>('raw')(codec)));
 }
-function fromPresetJson<A, O, I>(_preset: 'json'): Reader<Codec<A, O, I>, Validator<Errors, A, O, Jsontext, I, Jsontext>> {
-  return (codec: Codec<A, O, I>) => pipe(
-    codec,
-    fromSettings(select<A, O, I, 'json'>('json')(codec)),
-  );
+function fromPresetJson<A, O, I>(
+  _preset: 'json',
+): Reader<Codec<A, O, I>, Validator<Errors, A, O, Jsontext, I, Jsontext>> {
+  return (codec: Codec<A, O, I>) =>
+    pipe(codec, fromSettings(select<A, O, I, 'json'>('json')(codec)));
 }
 
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>): Validator<Errors, A, O, O, I, I>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'raw'): Validator<Errors, A, O, SO, I, SI>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'json'): Validator<Errors, A, O, Jsontext, I, Jsontext>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: 'strict'): Validator<Errors, A, O, O, O, O>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Settings<E,O,SO,I,SI>): Validator<E, A, O, SO, I, SI>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings: Customizer<E,O,SO,I,SI>): Validator<E, A, O, SO, I, SI>;
-export function validator<E, A, O, SO, I, SI>(codec: Codec<A, O, I>, settings?: Preset|Settings<E,O,SO,I,SI>|Customizer<E,O,SO,I,SI>) {
+export function validator<E, A, O, SO, I, SI>(
+  codec: Codec<A, O, I>,
+): Validator<Errors, A, O, O, I, I>;
+export function validator<E, A, O, SO, I, SI>(
+  codec: Codec<A, O, I>,
+  settings: 'raw',
+): Validator<Errors, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(
+  codec: Codec<A, O, I>,
+  settings: 'json',
+): Validator<Errors, A, O, Jsontext, I, Jsontext>;
+export function validator<E, A, O, SO, I, SI>(
+  codec: Codec<A, O, I>,
+  settings: 'strict',
+): Validator<Errors, A, O, O, O, O>;
+export function validator<E, A, O, SO, I, SI>(
+  codec: Codec<A, O, I>,
+  settings: Settings<E, O, SO, I, SI>,
+): Validator<E, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(
+  codec: Codec<A, O, I>,
+  settings: Customizer<E, O, SO, I, SI>,
+): Validator<E, A, O, SO, I, SI>;
+export function validator<E, A, O, SO, I, SI>(
+  codec: Codec<A, O, I>,
+  settings?: Preset | Settings<E, O, SO, I, SI> | Customizer<E, O, SO, I, SI>,
+) {
   if (typeof settings === 'object') {
-    return pipe(
-      codec,
-      fromSettings(settings)
-    )
+    return pipe(codec, fromSettings(settings));
   }
   if (typeof settings === 'function') {
-    return pipe(
-      codec,
-      fromCustomizer(settings)
-    );
+    return pipe(codec, fromCustomizer(settings));
   }
   if (settings === 'json') {
-     return pipe(
-       codec,
-       fromPresetJson('json')
-     );
+    return pipe(codec, fromPresetJson('json'));
   }
-  return pipe(
-    codec,
-    fromPresetRaw('raw'),
-  );
+  return pipe(codec, fromPresetRaw('raw'));
 }
